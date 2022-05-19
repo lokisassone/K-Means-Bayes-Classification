@@ -1,0 +1,53 @@
+load label.mat;
+load data.mat;%load the labels and data
+means=zeros(28,28,10);%to store the means for each class
+for i=0:9
+  meanindex=find(labelTrain==i);%find all in train where equal to class
+  [rows,col]=size(meanindex);%find amount of each class to divide for mean
+  sum=zeros(28,28,1);%to store the sum of one class to divide later
+    for j=1:rows
+      sum=sum+imageTrain(:,:,meanindex(j));%add all up elementwise
+    end
+  means(:,:,i+1)=sum./rows./255;%divide by rows to get mean and by 255 to display
+  subplot(2,5,i+1);
+  imshow(means(:,:,i+1));%display
+  means(:,:,i+1)=means(:,:,i+1)*255;%multiply back by 255 for algorithm
+end
+imatrix=zeros(10,500);
+for i=1:10
+  for j=1:500
+    imatrix(i,j)=-0.5*reshape((imageTest(:,:,j)-means(:,:,i)),[1,784])*reshape((imageTest(:,:,j)-means(:,:,i)),[784,1]);%got rid of covariance and log terms as don't affect results
+  end
+end
+[maxVal,Predicted]=max(imatrix,[],1);
+Predicted=Predicted-1;
+Predicted=Predicted.';
+[totalerrors,col]=size(find(Predicted~=labelTest));%to find amount of total error
+Perrortotal=totalerrors/500;%find total error rate
+Perrors=zeros(10,1);%initialize errors for each class
+checktotalerror=0;%just to make sure my errors for each class code works
+for x=0:9%for each class find error
+  classpredicted=Predicted(find(labelTest==x));%find what my NN classified
+  [rows,col]=size(classpredicted);%rows to calculate error rate
+  [errors,col1]=size(find(classpredicted~=x));%find amount of errors
+  Perrors(x+1)=errors/rows;%store error rate for each class
+  checktotalerror=checktotalerror+errors;%keep track of total error to compare
+end
+Perrorscheck=checktotalerror/500;%make sure code worked to compare total errors
+x=[0,1,2,3,4,5,6,7,8,9];%make the x values for my errors graph
+figure;
+bar(x,Perrors);%bar graph of class errors
+
+for m=0:9
+  covs=find(labelTrain==m);%find where train is each class
+  [rows,col]=size(covs);%find size of covs to iterate through all of them
+  covy=zeros(28,28,rows);%to store all of each class
+  for j=1:rows
+     covy(:,:,j)=imageTrain(:,:,covs(j));%storing into covy
+  end
+  covy=reshape(covy,[784,rows]);%reshape since need 784 dimension matrix
+  subplot(2,5,m+1);
+  imatrix=cov(covy.');%find cov matrix
+  invconv=inv(imatrix);%inverse of cov matrix gives back inf entries
+  imshow(imatrix,[]);
+end
